@@ -1,6 +1,16 @@
 import discord
-import asyncio
+#import asyncio
 
 bot = discord.Client()
 
-bot.run()
+
+try:
+    file = open('secret.bot', 'r')
+    token = file.readline()
+    file.close()
+    bot.run(token)
+except Exception:
+    print('Something went wrong ¯\_(ツ)_/¯')
+finally:
+    print('End of Bot.')
+

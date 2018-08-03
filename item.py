@@ -1,4 +1,3 @@
-
 class Item:
 	
 	def __init__(self,title='default title', desc='default description', sell=0, buy=0, amt=1):
@@ -23,6 +22,3 @@ class Item:
 	def setAmount(self, amt):
 		self.amount = amt
 	
-
-
-

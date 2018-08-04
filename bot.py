@@ -29,18 +29,36 @@ async def additem(ctx, title, desc, sell, buy, amt):
         pickle.load(inv_file) # loads from file
         inventory.append(Item(title, desc, sell, buy, amt))
         pickle.dump(inventory, inv_file) # dumps datat in file
+        await bot.say('added {0} to the inventory.'.format(title))
     else:
-        await bot.say('You can not add an item to the inventory')
+        await bot.say('You can not add an item to the inventory.')
 
 @bot.command(pass_context=True)
 async def rmitem(ctx, title, amt):
     """removes item(s) from the inventory."""
-    pass
+    if dm_check():
+        pickle.load(inv_file)
+        for x in range(len(inventory)):
+            if title == inventory[x].title:
+                for y in range(amt):
+                    inventory[x].amount -= 1
+                    if inventory[x].amount < 1:
+                        del inventory[x]
+                        break
+        pickle.dump(inventory, inv_file)
+        await bot.say('Removed {0} {1}(s) from the inventory.'.format(amt, title))
+    else:
+        await bot.say('You can not remove an item to the inventory.')
+            
 
 @bot.command(pass_context=True)
 async def lsinv(ctx):
     """lists the inventory."""
-    pass
+    string = ''
+    for item in inventory:
+        string += '''title: {0.title} desc: {0.description}
+            sell: {0.sell} buy: {0.buy} amount: {0.amount}\n'''.format(item)
+    await bot.say(string)
 
 @bot.command(pass_context=True)
 async def roll(ctx, sides):
@@ -53,8 +71,10 @@ try:
     token = file.readline()
     file.close()
     bot.run(token)
-except Exception:
+except Exception as error:
     print('Something went wrong ¯\_(ツ)_/¯')
+    print(error)
+    print(error.args)
 finally:
     print('End of Bot.')
 

@@ -1,3 +1,4 @@
+import re
 import discord
 from discord.ext import commands
 import pickle
@@ -64,46 +65,59 @@ async def lsinv(ctx):
 async def roll(ctx, *args):
     """roll a dice of designated sides."""
     sides = 20
+    numDice = 1
     mod = 0
     adv = ""
-    roll = 0
+    rolls = []
     adv_msg = ""
-    dis_msg = ""
+    force_crit = 0
 
     for arg in args:
-        if 'd' in arg and 'a' not in arg and 's' not in arg:
-            sides = int(arg[1:])
+        if re.match(r"^(([1-9]*)d[^i])", arg):
+            if arg.startswith('d'):
+                sides = int(arg[1:])
+            else:
+                i = arg.index('d')
+                numDice = int(arg[0:i])
+                sides = int(arg[i + 1:])
         elif '+' in arg or '-' in arg:
             mod = int(arg)
         elif 'adv' in arg or 'dis' in arg:
             adv = arg
+        elif arg == 'force crit':
+            force_crit = 1
+        elif arg == 'force fail':
+            force_crit = -1
         else:
             print('Invalid argument discarded')
 
-    if adv == "":
-        roll = randint(1,sides)
-    elif adv == "adv" or adv == "advantage":
-        one = randint(1,sides)
-        two = randint(1,sides)
-        if one > two:
-            roll = one
-            adv_msg = f' and {two}'
+    for _ in range(numDice):
+        roll = 0
+        if adv == "":
+            roll = randint(1,sides)
+        elif adv == "adv" or adv == "advantage":
+            roll = rollWithAdv(sides)
+            adv_msg = " with advantage"
+        elif adv == "dis" or adv == "disadvantage":
+            roll = rollWithAdv(sides, dis=True)
+            adv_msg = " with disadvantage"
         else:
-            roll = two
-            adv_msg = f' and {one}'
-    elif adv == "dis" or adv == "disadvantage":
-        one = randint(1,sides)
-        two = randint(1,sides)
-        if one < two:
-            roll = one
-            adv_msg = f' and {two}'
-        else:
-            roll = two
-            adv_msg = f' and {one}'
-    else:
-        await bot.say('Invalid argument! Try "adv" or "dis"')
+            await bot.say('Invalid argument! Try "adv" or "dis"')
 
-    result = roll + mod
+        if force_crit > 0:
+            roll = sides
+        elif force_crit < 0:
+            roll = 1
+        rolls.append(roll)
+
+    if numDice == 1:
+        result = rolls[0] + mod
+    else:
+        result = 0
+        for roll in rolls:
+            result += roll
+        result += mod
+
     min_total = "total"
 
     if result < 1:
@@ -115,14 +129,40 @@ async def roll(ctx, *args):
     elif mod > 0:
         mod = f'+{mod}'
 
-    if roll == sides:
-        await bot.say(f'{ctx.message.author.mention} crit{adv_msg} with {mod} for a {min_total} of {result}!')
-    elif roll == 1:
-        await bot.say(f'{ctx.message.author.mention} rolled{adv_msg} a nat 1 with {mod} for a {min_total} of {result}')
+    if numDice > 1:
+        await bot.say(f'{ctx.message.author.mention} rolled {numDice} d{sides}s and got {printableArray(rolls)}{adv_msg} with {mod} for a {min_total} of **{result}**.')
+    elif rolls[0] == sides and sides == 20:
+        await bot.say(f'{ctx.message.author.mention} **crit{adv_msg}** on a d{sides} with {mod} for a {min_total} of **{result}**!')
+    elif rolls[0] == 1 and sides == 20:
+        await bot.say(f'{ctx.message.author.mention} rolled a **nat 1{adv_msg}** on a d{sides} with {mod} for a {min_total} of **{result}**.')
     else:
-        await bot.say(f'{ctx.message.author.mention} rolled {roll}{adv_msg} with {mod} for a {min_total} of {result}.')
+        await bot.say(f'{ctx.message.author.mention} rolled {rolls[0]}{adv_msg} on a d{sides} with {mod} for a {min_total} of **{result}**.')
    
+def rollWithAdv(sides, dis=False):
+    result = 0
+    rollOne = randint(1,sides)
+    rollTwo = randint(1,sides)
 
+    if not dis:
+        result = rollOne if rollOne > rollTwo else rollTwo
+    if dis:
+        result = rollOne if rollOne < rollTwo else rollTwo
+
+    return result
+        
+def printableArray(arr):
+    result = ""
+
+    for i in range(len(arr)):
+        if i < (len(arr) - 2):
+            result += f'{arr[i]}'
+            result += ', '
+        elif i == (len(arr) - 2):
+            result += f'{arr[i]}'
+        else:
+            result += f' and {arr[i]}'
+
+    return result
 
 try:
     file = open('secret.bot', 'r')

@@ -67,13 +67,15 @@ async def roll(ctx, *args):
     mod = 0
     adv = ""
     roll = 0
+    adv_msg = ""
+    dis_msg = ""
 
     for arg in args:
-        if 'd' in arg and 'dv' not in arg:
+        if 'd' in arg and 'a' not in arg and 's' not in arg:
             sides = int(arg[1:])
         elif '+' in arg or '-' in arg:
             mod = int(arg)
-        elif 'adv' in arg:
+        elif 'adv' in arg or 'dis' in arg:
             adv = arg
         else:
             print('Invalid argument discarded')
@@ -85,15 +87,19 @@ async def roll(ctx, *args):
         two = randint(1,sides)
         if one > two:
             roll = one
+            adv_msg = f' and {two}'
         else:
             roll = two
+            adv_msg = f' and {one}'
     elif adv == "dis" or adv == "disadvantage":
         one = randint(1,sides)
         two = randint(1,sides)
         if one < two:
             roll = one
+            adv_msg = f' and {two}'
         else:
             roll = two
+            adv_msg = f' and {one}'
     else:
         await bot.say('Invalid argument! Try "adv" or "dis"')
 
@@ -110,11 +116,11 @@ async def roll(ctx, *args):
         mod = f'+{mod}'
 
     if roll == sides:
-        await bot.say(f'{ctx.message.author.mention} crit with {mod} for a {min_total} of {result}!')
+        await bot.say(f'{ctx.message.author.mention} crit{adv_msg} with {mod} for a {min_total} of {result}!')
     elif roll == 1:
-        await bot.say(f'{ctx.message.author.mention} rolled a nat 1 with {mod} for a {min_total} of {result}')
+        await bot.say(f'{ctx.message.author.mention} rolled{adv_msg} a nat 1 with {mod} for a {min_total} of {result}')
     else:
-        await bot.say(f'{ctx.message.author.mention} rolled {roll} with {mod} for a {min_total} of {result}.')
+        await bot.say(f'{ctx.message.author.mention} rolled {roll}{adv_msg} with {mod} for a {min_total} of {result}.')
    
 
 

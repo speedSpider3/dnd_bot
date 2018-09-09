@@ -61,9 +61,23 @@ async def lsinv(ctx):
     await bot.say(string)
 
 @bot.command(pass_context=True)
-async def roll(ctx, mod=0, sides=20, adv=""):
+async def roll(ctx, *args):
     """roll a dice of designated sides."""
+    sides = 20
+    mod = 0
+    adv = ""
     roll = 0
+
+    for arg in args:
+        if 'd' in arg and 'dv' not in arg:
+            sides = int(arg[1:])
+        elif '+' in arg or '-' in arg:
+            mod = int(arg)
+        elif 'adv' in arg:
+            adv = arg
+        else:
+            print('Invalid argument discarded')
+
     if adv == "":
         roll = randint(1,sides)
     elif adv == "adv" or adv == "advantage":
@@ -101,7 +115,6 @@ async def roll(ctx, mod=0, sides=20, adv=""):
         await bot.say(f'{ctx.message.author.mention} rolled a nat 1 with {mod} for a {min_total} of {result}')
     else:
         await bot.say(f'{ctx.message.author.mention} rolled {roll} with {mod} for a {min_total} of {result}.')
-
    
 
 

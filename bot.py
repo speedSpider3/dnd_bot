@@ -72,9 +72,11 @@ async def roll(ctx, *args):
     rolls = []
     adv_msg = ""
     force_crit = 0
+    double = False
+    double_msg = ""
 
     for arg in args:
-        if re.match(r"^(([1-9]*)d[^i])", arg):
+        if re.match(r"^(([1-9]*)d[^io])", arg):
             if arg.startswith('d'):
                 sides = int(arg[1:])
             else:
@@ -89,6 +91,9 @@ async def roll(ctx, *args):
             force_crit = 1
         elif arg == 'force fail':
             force_crit = -1
+        elif arg == 'double':
+            double = True
+            double_msg = ", doubled,"
         else:
             print('Invalid argument discarded')
 
@@ -113,12 +118,17 @@ async def roll(ctx, *args):
 
     if numDice == 1:
         result = rolls[0]
+        if double:
+            result *= 2
+        
         for mod in mods:
             result += int(mod)
     else:
         result = 0
         for roll in rolls:
             result += roll
+        if double:
+            result *= 2
         for mod in mods:
             result += int(mod)
 
@@ -136,13 +146,13 @@ async def roll(ctx, *args):
         mod_msg = printableArray(mods)
 
     if numDice > 1:
-        await bot.say(f'{ctx.message.author.mention} rolled {numDice} d{sides}s and got {printableArray(rolls)}{adv_msg} with {mod_msg} for a {min_total} of **{result}**.')
+        await bot.say(f'{ctx.message.author.mention} rolled {numDice} d{sides}s and got {printableArray(rolls)}{adv_msg}{double_msg} with {mod_msg} for a {min_total} of **{result}**.')
     elif rolls[0] == sides and sides == 20:
-        await bot.say(f'{ctx.message.author.mention} **crit{adv_msg}** on a d{sides} with {mod_msg} for a {min_total} of **{result}**!')
+        await bot.say(f'{ctx.message.author.mention} **crit{adv_msg}** on a d{sides}{double_msg} with {mod_msg} for a {min_total} of **{result}**!')
     elif rolls[0] == 1 and sides == 20:
-        await bot.say(f'{ctx.message.author.mention} rolled a **nat 1{adv_msg}** on a d{sides} with {mod_msg} for a {min_total} of **{result}**.')
+        await bot.say(f'{ctx.message.author.mention} rolled a **nat 1{adv_msg}** on a d{sides}{double_msg} with {mod_msg} for a {min_total} of **{result}**.')
     else:
-        await bot.say(f'{ctx.message.author.mention} rolled {rolls[0]}{adv_msg} on a d{sides} with {mod_msg} for a {min_total} of **{result}**.')
+        await bot.say(f'{ctx.message.author.mention} rolled {rolls[0]}{adv_msg} on a d{sides}{double_msg} with {mod_msg} for a {min_total} of **{result}**.')
    
 def rollWithAdv(sides, dis=False):
     result = 0

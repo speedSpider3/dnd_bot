@@ -61,16 +61,56 @@ async def lsinv(ctx):
     await bot.say(string)
 
 @bot.command(pass_context=True)
-async def roll(ctx, sides):
+async def roll(ctx, mod=0, sides=20, adv=""):
     """roll a dice of designated sides."""
-    await bot.say('{0.message.author}, rolled a {1} out of {2}.'.format(ctx, randint(1,sides), sides))
+    roll = 0
+    if adv == "":
+        roll = randint(1,sides)
+    elif adv == "adv" or adv == "advantage":
+        one = randint(1,sides)
+        two = randint(1,sides)
+        if one > two:
+            roll = one
+        else:
+            roll = two
+    elif adv == "dis" or adv == "disadvantage":
+        one = randint(1,sides)
+        two = randint(1,sides)
+        if one < two:
+            roll = one
+        else:
+            roll = two
+    else:
+        await bot.say('Invalid argument! Try "adv" or "dis"')
+
+    result = roll + mod
+    min_total = "total"
+
+    if result < 1:
+        result = 1
+        min_total = "minimum"
+
+    if mod == 0:
+        mod = "no modifier"
+    elif mod > 0:
+        mod = f'+{mod}'
+
+    if roll == sides:
+        await bot.say(f'{ctx.message.author.mention} crit with {mod} for a {min_total} of {result}!')
+    elif roll == 1:
+        await bot.say(f'{ctx.message.author.mention} rolled a nat 1 with {mod} for a {min_total} of {result}')
+    else:
+        await bot.say(f'{ctx.message.author.mention} rolled {roll} with {mod} for a {min_total} of {result}.')
+
+   
 
 
 try:
     file = open('secret.bot', 'r')
     token = file.readline()
     file.close()
-    bot.run(token)
+    client = discord.Client()
+    bot.run('NDg4MjUzMjI1OTQyNjQ2Nzg0.DnZhGA.VqbRVyrGigGxbFjUtG_KqgfORBQ')
 except Exception as error:
     print('Something went wrong ¯\_(ツ)_/¯')
     print(error)

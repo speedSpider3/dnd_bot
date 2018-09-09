@@ -148,9 +148,9 @@ async def roll(ctx, *args):
     if numDice > 1:
         await bot.say(f'{ctx.message.author.mention} rolled {numDice} d{sides}s and got {printableArray(rolls)}{adv_msg}{double_msg} with {mod_msg} for a {min_total} of **{result}**.')
     elif rolls[0] == sides and sides == 20:
-        await bot.say(f'{ctx.message.author.mention} **crit{adv_msg}** on a d{sides}{double_msg} with {mod_msg} for a {min_total} of **{result}**!')
+        await bot.say(f'{ctx.message.author.mention} **crit**{adv_msg} on a d{sides}{double_msg} with {mod_msg} for a {min_total} of **{result}**!')
     elif rolls[0] == 1 and sides == 20:
-        await bot.say(f'{ctx.message.author.mention} rolled a **nat 1{adv_msg}** on a d{sides}{double_msg} with {mod_msg} for a {min_total} of **{result}**.')
+        await bot.say(f'{ctx.message.author.mention} rolled a **nat 1**{adv_msg} on a d{sides}{double_msg} with {mod_msg} for a {min_total} of **{result}**.')
     else:
         await bot.say(f'{ctx.message.author.mention} rolled {rolls[0]}{adv_msg} on a d{sides}{double_msg} with {mod_msg} for a {min_total} of **{result}**.')
    

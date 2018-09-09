@@ -74,6 +74,7 @@ async def roll(ctx, *args):
     force_crit = 0
     double = False
     double_msg = ""
+    secret = False
 
     for arg in args:
         if re.match(r"^(([1-9]*)d[^io])", arg):
@@ -94,6 +95,8 @@ async def roll(ctx, *args):
         elif arg == 'double':
             double = True
             double_msg = ", doubled,"
+        elif arg == 'secret':
+            secret = True
         else:
             print('Invalid argument discarded')
 
@@ -145,14 +148,21 @@ async def roll(ctx, *args):
     else:
         mod_msg = printableArray(mods)
 
+    message = ''
+
     if numDice > 1:
-        await bot.say(f'{ctx.message.author.mention} rolled {numDice} d{sides}s and got {printableArray(rolls)}{adv_msg}{double_msg} with {mod_msg} for a {min_total} of **{result}**.')
+        message = (f'rolled {numDice} d{sides}s and got {printableArray(rolls)}{adv_msg}{double_msg} with {mod_msg} for a {min_total} of **{result}**.')
     elif rolls[0] == sides and sides == 20:
-        await bot.say(f'{ctx.message.author.mention} **crit**{adv_msg} on a d{sides}{double_msg} with {mod_msg} for a {min_total} of **{result}**!')
+        message = (f'**crit**{adv_msg} on a d{sides}{double_msg} with {mod_msg} for a {min_total} of **{result}**!')
     elif rolls[0] == 1 and sides == 20:
-        await bot.say(f'{ctx.message.author.mention} rolled a **nat 1**{adv_msg} on a d{sides}{double_msg} with {mod_msg} for a {min_total} of **{result}**.')
+        message = (f'rolled a **nat 1**{adv_msg} on a d{sides}{double_msg} with {mod_msg} for a {min_total} of **{result}**.')
     else:
-        await bot.say(f'{ctx.message.author.mention} rolled {rolls[0]}{adv_msg} on a d{sides}{double_msg} with {mod_msg} for a {min_total} of **{result}**.')
+        message = (f'rolled {rolls[0]}{adv_msg} on a d{sides}{double_msg} with {mod_msg} for a {min_total} of **{result}**.')
+
+    if secret:
+        await bot.send_message(ctx.message.author, f'You {message}')
+    else:
+        await bot.say(f'{ctx.message.author.mention} {message}')
    
 def rollWithAdv(sides, dis=False):
     result = 0
@@ -184,7 +194,6 @@ try:
     file = open('secret.bot', 'r')
     token = file.readline()
     file.close()
-    client = discord.Client()
     bot.run(token)
 except Exception as error:
     print('Something went wrong ¯\_(ツ)_/¯')

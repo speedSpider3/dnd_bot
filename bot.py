@@ -66,7 +66,8 @@ async def roll(ctx, *args):
     """roll a dice of designated sides."""
     sides = 20
     numDice = 1
-    mod = 0
+    mod_msg = ""
+    mods = []
     adv = ""
     rolls = []
     adv_msg = ""
@@ -81,7 +82,7 @@ async def roll(ctx, *args):
                 numDice = int(arg[0:i])
                 sides = int(arg[i + 1:])
         elif '+' in arg or '-' in arg:
-            mod = int(arg)
+            mods.append(str(arg))
         elif 'adv' in arg or 'dis' in arg:
             adv = arg
         elif arg == 'force crit':
@@ -111,12 +112,15 @@ async def roll(ctx, *args):
         rolls.append(roll)
 
     if numDice == 1:
-        result = rolls[0] + mod
+        result = rolls[0]
+        for mod in mods:
+            result += int(mod)
     else:
         result = 0
         for roll in rolls:
             result += roll
-        result += mod
+        for mod in mods:
+            result += int(mod)
 
     min_total = "total"
 
@@ -124,19 +128,21 @@ async def roll(ctx, *args):
         result = 1
         min_total = "minimum"
 
-    if mod == 0:
-        mod = "no modifier"
-    elif mod > 0:
-        mod = f'+{mod}'
+    if len(mods) == 0:
+        mod_msg = "no modifiers"
+    elif len(mods) == 1:
+        mod_msg = mods[0]
+    else:
+        mod_msg = printableArray(mods)
 
     if numDice > 1:
-        await bot.say(f'{ctx.message.author.mention} rolled {numDice} d{sides}s and got {printableArray(rolls)}{adv_msg} with {mod} for a {min_total} of **{result}**.')
+        await bot.say(f'{ctx.message.author.mention} rolled {numDice} d{sides}s and got {printableArray(rolls)}{adv_msg} with {mod_msg} for a {min_total} of **{result}**.')
     elif rolls[0] == sides and sides == 20:
-        await bot.say(f'{ctx.message.author.mention} **crit{adv_msg}** on a d{sides} with {mod} for a {min_total} of **{result}**!')
+        await bot.say(f'{ctx.message.author.mention} **crit{adv_msg}** on a d{sides} with {mod_msg} for a {min_total} of **{result}**!')
     elif rolls[0] == 1 and sides == 20:
-        await bot.say(f'{ctx.message.author.mention} rolled a **nat 1{adv_msg}** on a d{sides} with {mod} for a {min_total} of **{result}**.')
+        await bot.say(f'{ctx.message.author.mention} rolled a **nat 1{adv_msg}** on a d{sides} with {mod_msg} for a {min_total} of **{result}**.')
     else:
-        await bot.say(f'{ctx.message.author.mention} rolled {rolls[0]}{adv_msg} on a d{sides} with {mod} for a {min_total} of **{result}**.')
+        await bot.say(f'{ctx.message.author.mention} rolled {rolls[0]}{adv_msg} on a d{sides} with {mod_msg} for a {min_total} of **{result}**.')
    
 def rollWithAdv(sides, dis=False):
     result = 0

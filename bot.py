@@ -129,7 +129,7 @@ try:
     token = file.readline()
     file.close()
     client = discord.Client()
-    bot.run('NDg4MjUzMjI1OTQyNjQ2Nzg0.DnZhGA.VqbRVyrGigGxbFjUtG_KqgfORBQ')
+    bot.run(token)
 except Exception as error:
     print('Something went wrong ¯\_(ツ)_/¯')
     print(error)

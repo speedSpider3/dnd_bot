@@ -61,15 +61,74 @@ async def lsinv(ctx):
     await bot.say(string)
 
 @bot.command(pass_context=True)
-async def roll(ctx, sides):
+async def roll(ctx, *args):
     """roll a dice of designated sides."""
-    await bot.say('{0.message.author}, rolled a {1} out of {2}.'.format(ctx, randint(1,sides), sides))
+    sides = 20
+    mod = 0
+    adv = ""
+    roll = 0
+    adv_msg = ""
+    dis_msg = ""
+
+    for arg in args:
+        if 'd' in arg and 'a' not in arg and 's' not in arg:
+            sides = int(arg[1:])
+        elif '+' in arg or '-' in arg:
+            mod = int(arg)
+        elif 'adv' in arg or 'dis' in arg:
+            adv = arg
+        else:
+            print('Invalid argument discarded')
+
+    if adv == "":
+        roll = randint(1,sides)
+    elif adv == "adv" or adv == "advantage":
+        one = randint(1,sides)
+        two = randint(1,sides)
+        if one > two:
+            roll = one
+            adv_msg = f' and {two}'
+        else:
+            roll = two
+            adv_msg = f' and {one}'
+    elif adv == "dis" or adv == "disadvantage":
+        one = randint(1,sides)
+        two = randint(1,sides)
+        if one < two:
+            roll = one
+            adv_msg = f' and {two}'
+        else:
+            roll = two
+            adv_msg = f' and {one}'
+    else:
+        await bot.say('Invalid argument! Try "adv" or "dis"')
+
+    result = roll + mod
+    min_total = "total"
+
+    if result < 1:
+        result = 1
+        min_total = "minimum"
+
+    if mod == 0:
+        mod = "no modifier"
+    elif mod > 0:
+        mod = f'+{mod}'
+
+    if roll == sides:
+        await bot.say(f'{ctx.message.author.mention} crit{adv_msg} with {mod} for a {min_total} of {result}!')
+    elif roll == 1:
+        await bot.say(f'{ctx.message.author.mention} rolled{adv_msg} a nat 1 with {mod} for a {min_total} of {result}')
+    else:
+        await bot.say(f'{ctx.message.author.mention} rolled {roll}{adv_msg} with {mod} for a {min_total} of {result}.')
+   
 
 
 try:
     file = open('secret.bot', 'r')
     token = file.readline()
     file.close()
+    client = discord.Client()
     bot.run(token)
 except Exception as error:
     print('Something went wrong ¯\_(ツ)_/¯')

@@ -12,21 +12,27 @@ bot = commands.Bot(command_prefix=prefix)
 inv_file = 'inv.bot'
 
 def dm_check(ctx):
-    return True if 'dungeon master' in ctx.message.author.role.name.lower() else False
+	for role in ctx.message.author.roles:
+		if 'Dungeon Master' == role.name:
+			return True
+	return False
 
-
+@bot.command(pass_context=True)
+async def dmcheck(ctx):
+	await bot.say(f'{ctx.message.author.mention} is DM: {dm_check(ctx)}')
+	
 @bot.command(pass_context=True)
 async def prefix(ctx, pre):
     """changes the prefix of the bot."""
-    if dm_check():
+    if dm_check(ctx):
         prefix = pre
     else:
-        await bot.say('You can not set the prefix of the bot.')
+        await bot.say('Only the DM can change the bot prefix.')
 
 @bot.command(pass_context=True)
 async def additem(ctx, title, desc, sell, buy, amt):
     """addes item to the inventory"""
-    if dm_check():
+    if dm_check(ctx):
         pickle.load(inv_file) # loads from file
         inventory.append(Item(title, desc, sell, buy, amt))
         pickle.dump(inventory, inv_file) # dumps datat in file
@@ -37,7 +43,7 @@ async def additem(ctx, title, desc, sell, buy, amt):
 @bot.command(pass_context=True)
 async def rmitem(ctx, title, amt):
     """removes item(s) from the inventory."""
-    if dm_check():
+    if dm_check(ctx):
         pickle.load(inv_file)
         for x in range(len(inventory)):
             if title == inventory[x].title:
@@ -49,7 +55,7 @@ async def rmitem(ctx, title, amt):
         pickle.dump(inventory, inv_file)
         await bot.say('Removed {0} {1}(s) from the inventory.'.format(amt, title))
     else:
-        await bot.say('You can not remove an item to the inventory.')
+        await bot.say('You can not remove an item from the inventory.')
             
 
 @bot.command(pass_context=True)

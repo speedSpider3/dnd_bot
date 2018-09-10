@@ -83,7 +83,7 @@ async def roll(ctx, *args):
     secret = False
 
     for arg in args:
-        if re.match(r"^(([1-9]*)d[^io])", arg):
+        if re.match(r"^(([0-9]*)d[^io])", arg):
             if arg.startswith('d'):
                 sides = int(arg[1:])
             else:

@@ -62,7 +62,7 @@ async def lsinv(ctx):
     await bot.say(string)
 
 @bot.command(pass_context=True)
-async def test(ctx, *args):
+async def roll(ctx, *args):
     arguments = {'sides': [], 'amount': [], 'adv/dis': 0, 'mod': 0, 'secret': False, 'excpt': []}
     sides = []
     for arg in args:
@@ -257,6 +257,7 @@ try:
     file = open('secret.bot', 'r')
     token = file.readline()
     file.close()
+    token = token.replace('\n','')
     bot.run(token)
 except Exception as error:
     print('Something went wrong ¯\_(ツ)_/¯')

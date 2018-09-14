@@ -69,21 +69,13 @@ async def roll(ctx, *args):
 
         if 'adv' == arg:
             arguments['adv/dis'] += 1
-            continue # continues can be removed if everything is turned into an elif statement
-
-        if 'dis' == arg:
-            arguments['adv/dis'] -= 1
-            continue
-        
-        if '+' in arg or '-' in arg:
+        elif 'dis' == arg:
+            arguments['adv/dis'] -= 1        
+        elif '+' in arg or '-' in arg:
             arguments['mod'] += int(arg)
-            continue
-
-        if 'secret' == arg:
+        elif 'secret' == arg:
             arguments['secret'] = True
-            continue
-
-        if 'd' in arg:
+        elif 'd' in arg:
             for x in range(0,len(arg) - 1):
                 if arg[x] == 'd':
                     try:
@@ -95,21 +87,24 @@ async def roll(ctx, *args):
                             arguments['sides'].append(int(arg[x+1:])) # gets numbers after the d
                     except Exception as e:
                         arguments['excpt'].append(str(e))
+        else:
+            arguments['excpt'].append(str(SyntaxError('unknown command: {0}'.format(arg))))
+
+    if arguments['sides'] == []:
+        arguments['sides'].append(20)
+        arguments['amount'].append(1)
 
     for rolls in range(0, len(arguments['sides'])):
         for j in range(0,arguments['amount'][rolls]):
-             # roll adv
-            if arguments['adv/dis'] > 0:
+            if arguments['adv/dis'] > 0: # roll adv
                 temp1 = randint(1,arguments['sides'][rolls]) + arguments['mod']
                 temp2 = randint(1,arguments['sides'][rolls]) + arguments['mod']
                 sides.append(temp1 if temp1 > temp2 else temp2)
-            # roll dis
-            elif arguments['adv/dis'] < 0:
+            elif arguments['adv/dis'] < 0: # roll dis
                 temp1 = randint(1,arguments['sides'][rolls]) + arguments['mod']
                 temp2 = randint(1,arguments['sides'][rolls]) + arguments['mod']
                 sides.append(temp1 if temp1 < temp2 else temp2)
-            # roll no adv
-            else:
+            else: # roll no adv
                 sides.append(randint(1,arguments['sides'][rolls]) + arguments['mod'])
 
     sides.insert(-1, 'and')
@@ -121,7 +116,7 @@ async def roll(ctx, *args):
     else:
         message = '{0.message.author.mention} has rolled {1}'.format(ctx, sides)
         await bot.say(message)
-
+        
 '''
 @bot.command(pass_context=True)
 async def roll_legacy(ctx, *args):

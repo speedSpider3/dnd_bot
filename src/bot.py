@@ -4,24 +4,41 @@ from discord.ext import commands
 import pickle
 from item import Item
 from random import randint
-#import asyncio
+from log import Logger
+from inventory import Inventory
 
+log = Logger()
 inventory = []
 prefix = '!'
 bot = commands.Bot(command_prefix=prefix)
 inv_file = 'inv.bot'
 
-def dm_check(ctx):
-    return True if 'dungeon master' in ctx.message.author.role.name.lower() else False
+@bot.command()
+def checklog():
+    message = log.read()
+    await bot.say(message)
 
+def dm_check(ctx):
+    try:
+        return True if 'dungeon master' in ctx.message.author.role.name.lower() else False
+    except Exception as e:
+        log.queue_data(e)
+    finally:
+        log.write()
 
 @bot.command(pass_context=True)
 async def prefix(ctx, pre):
     """changes the prefix of the bot."""
-    if dm_check(ctx):
-        prefix = pre
-    else:
-        await bot.say('You can not set the prefix of the bot.')
+    try:
+        if dm_check(ctx):
+            prefix = pre
+        else:
+            await bot.say('You can not set the prefix of the bot.')
+    except Exception as e:
+        log.queue_data(e)
+    finally:
+        log.write()
+
 
 @bot.command(pass_context=True)
 async def additem(ctx, title, desc, sell, buy, amt):
@@ -86,8 +103,10 @@ async def roll(ctx, *args):
                             arguments['amount'].append(int(arg[:x])) # gets numbers before the d
                             arguments['sides'].append(int(arg[x+1:])) # gets numbers after the d
                     except Exception as e:
+                        log.queue_data(e)
                         arguments['excpt'].append(str(e))
         else:
+            log.queue_data(SyntaxError('unknown command: {0}'.format(arg)))
             arguments['excpt'].append(str(SyntaxError('unknown command: {0}'.format(arg))))
 
     if arguments['sides'] == []:
@@ -109,11 +128,13 @@ async def roll(ctx, *args):
 
     sides.insert(-1, 'and')
     sides = str(sides).strip('[').strip(']').replace('\'', '').replace('and,', 'and')
-   
+
     if arguments['secret']:
+        log.write()
         message = 'you rolled, {0}'.format(sides)
         await bot.send_message(ctx.message.author, message)
     else:
+        log.write()
         message = '{0.message.author.mention} has rolled {1}'.format(ctx, sides)
         await bot.say(message)
         

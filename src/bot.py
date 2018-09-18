@@ -15,7 +15,10 @@ inv_file = 'inv.bot'
 
 def dm_check(ctx):
     try:
-        return True if 'dungeon master' in ctx.message.author.role.name.lower() else False
+        for role in ctx.message.author.roles:
+            if 'dungeon master' == role.name.lower():
+                return True
+        return False
     except Exception as e:
         log.queue_data(e)
     finally:
@@ -25,10 +28,6 @@ def dm_check(ctx):
 async def checklog():
     message = log.read()
     await bot.say(message)
-
-@bot.command(pass_context=True)
-async def dmcheck(ctx):
-	await bot.say(f'{ctx.message.author.mention} is DM: {dm_check(ctx)}')
 	
 @bot.command(pass_context=True)
 async def prefix(ctx, pre):

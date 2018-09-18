@@ -83,194 +83,107 @@ async def lsinv(ctx):
 
 @bot.command(pass_context=True)
 async def roll(ctx, *args):
-    arguments = {'sides': [], 'amount': [], 'adv/dis': 0, 'mod': 0, 'secret': False, 'excpt': []}
-    sides = []
+    arguments = {'sides': 20, 'amount': 1, 'adv/dis': 0, 'mods': [], 'secret': False, 'double': False}
+    msgs = {'rolls': [], 'double': '', 'adv/dis': '', 'min/total': 'total', 'mod': 'no modifiers'}
     for arg in args:
 
-        if 'adv' == arg:
+        if arg.endswith('d1'):
+            await bot.say('Hysterical.')
+            return
+        elif 'adv' == arg:
             arguments['adv/dis'] += 1
         elif 'dis' == arg:
             arguments['adv/dis'] -= 1        
         elif '+' in arg or '-' in arg:
-            arguments['mod'] += int(arg)
+            arguments['mods'].append(arg)
         elif 'secret' == arg:
             arguments['secret'] = True
+        elif 'double' == arg:
+            arguments['double'] = True
+            msgs['double'] = ', doubled,'
         elif 'd' in arg:
-            for x in range(0,len(arg) - 1):
-                if arg[x] == 'd':
-                    try:
-                        if arg[:x] == '':
-                            arguments['amount'].append(1) # sets amount to 1 
-                            arguments['sides'].append(int(arg[x+1:])) # gets dice size
-                        else:
-                            arguments['amount'].append(int(arg[:x])) # gets numbers before the d
-                            arguments['sides'].append(int(arg[x+1:])) # gets numbers after the d
-                    except Exception as e:
-                        log.queue_data(e)
-                        arguments['excpt'].append(str(e))
+            try:
+                if arg.startswith('d'):
+                    arguments['sides'] = int(arg[1:])
+                    print(arguments['sides'])
+                else:
+                    d_ind = arg.index('d')
+                    arguments['amount'] = int(arg[:d_ind])
+                    arguments['sides'] = int(arg[d_ind+1:])
+                    print(arguments['sides'])
+            except Exception as e:
+                log.queue_data(e)
         else:
             log.queue_data(SyntaxError('unknown command: {0}'.format(arg)))
-            arguments['excpt'].append(str(SyntaxError('unknown command: {0}'.format(arg))))
 
-    if arguments['sides'] == []:
-        arguments['sides'].append(20)
-        arguments['amount'].append(1)
-
-    for rolls in range(0, len(arguments['sides'])):
-        for j in range(0,arguments['amount'][rolls]):
-            if arguments['adv/dis'] > 0: # roll adv
-                temp1 = randint(1,arguments['sides'][rolls]) + arguments['mod']
-                temp2 = randint(1,arguments['sides'][rolls]) + arguments['mod']
-                sides.append(temp1 if temp1 > temp2 else temp2)
-            elif arguments['adv/dis'] < 0: # roll dis
-                temp1 = randint(1,arguments['sides'][rolls]) + arguments['mod']
-                temp2 = randint(1,arguments['sides'][rolls]) + arguments['mod']
-                sides.append(temp1 if temp1 < temp2 else temp2)
-            else: # roll no adv
-                sides.append(randint(1,arguments['sides'][rolls]) + arguments['mod'])
-
-    sides.insert(-1, 'and')
-    sides = str(sides).strip('[').strip(']').replace('\'', '').replace('and,', 'and')
-
-    if arguments['secret']:
-        log.write()
-        message = 'you rolled, {0}'.format(sides)
-        await bot.send_message(ctx.message.author, message)
-    else:
-        log.write()
-        message = '{0.message.author.mention} has rolled {1}'.format(ctx, sides)
-        await bot.say(message)
-        
-'''
-@bot.command(pass_context=True)
-async def roll_legacy(ctx, *args):
-    """roll a dice of designated sides."""
-    sides = 20
-    numDice = 1
-    mod_msg = ""
-    mods = []
-    adv = ""
-    rolls = []
-    adv_msg = ""
-    force_crit = 0
-    double = False
-    double_msg = ""
-    secret = False
-
-    for arg in args:
-        if re.match(r"^(([0-9]*)d[^io])", arg):
-            if arg.startswith('d'):
-                sides = int(arg[1:])
-            else:
-                i = arg.index('d')
-                numDice = int(arg[0:i])
-                sides = int(arg[i + 1:])
-        elif '+' in arg or '-' in arg:
-            mods.append(str(arg))
-        elif 'adv' in arg or 'dis' in arg:
-            adv = arg
-        elif arg == 'force crit':
-            force_crit = 1
-        elif arg == 'force fail':
-            force_crit = -1
-        elif arg == 'double':
-            double = True
-            double_msg = ", doubled,"
-        elif arg == 'secret':
-            secret = True
+    for _ in range(arguments['amount']):
+        if arguments['adv/dis'] > 0:
+            temp1 = randint(1,arguments['sides'])
+            temp2 = randint(1,arguments['sides'])
+            msgs['rolls'].append(temp1 if temp1 > temp2 else temp2)
+            msgs['adv/dis'] = ' with advantage'
+        elif arguments['adv/dis'] < 0:
+            temp1 = randint(1,arguments['sides'])
+            temp2 = randint(1,arguments['sides'])
+            msgs['rolls'].append(temp1 if temp1 < temp2 else temp2)
+            msgs['adv/dis'] = ' with disadvantage'
         else:
-            print('Invalid argument discarded')
+            msgs['rolls'].append(randint(1,arguments['sides']))
 
-    for _ in range(numDice):
-        roll = 0
-        if adv == "":
-            roll = randint(1,sides)
-        elif adv == "adv" or adv == "advantage":
-            roll = roll_with_adv(sides)
-            adv_msg = " with advantage"
-        elif adv == "dis" or adv == "disadvantage":
-            roll = roll_with_adv(sides, dis=True)
-            adv_msg = " with disadvantage"
-        else:
-            await bot.say('Invalid argument! Try "adv" or "dis"')
+    total = 0
+    for roll in msgs['rolls']:
+        total += roll
+    if arguments['double']:
+        total *= 2
+    for mod in arguments['mods']:
+        total += int(mod)
 
-        if force_crit > 0:
-            roll = sides
-        elif force_crit < 0:
-            roll = 1
-        rolls.append(roll)
+    if total < 1:
+        total = 1
+        msgs['min/total'] = 'minimum'
 
-    if numDice == 1:
-        result = rolls[0]
-        if double:
-            result *= 2
-        
-        for mod in mods:
-            result += int(mod)
-    else:
-        result = 0
-        for roll in rolls:
-            result += roll
-        if double:
-            result *= 2
-        for mod in mods:
-            result += int(mod)
-
-    min_total = "total"
-
-    if result < 1:
-        result = 1
-        min_total = "minimum"
-
-    if len(mods) == 0:
-        mod_msg = "no modifiers"
-    elif len(mods) == 1:
-        mod_msg = mods[0]
-    else:
-        mod_msg = printable_array(mods)
+    if len(arguments['mods']) > 0:
+        msgs['mod'] = str_array(arguments['mods'])
 
     message = ''
-
-    if numDice > 1:
-        message = (f'rolled {numDice} d{sides}s and got {printable_array(rolls)}{adv_msg}{double_msg} with {mod_msg} for a {min_total} of **{result}**.')
-    elif rolls[0] == sides and sides == 20:
-        message = (f'**crit**{adv_msg} on a d{sides}{double_msg} with {mod_msg} for a {min_total} of **{result}**!')
-    elif rolls[0] == 1 and sides == 20:
-        message = (f'rolled a **nat 1**{adv_msg} on a d{sides}{double_msg} with {mod_msg} for a {min_total} of **{result}**.')
+    if arguments['amount'] > 1:
+        message = ('rolled {0} d{1}s and got {2}').format(
+                    arguments['amount'], 
+                    arguments['sides'], 
+                    str_array(msgs['rolls']))
+    elif msgs['rolls'][0] == 20:
+        message = ('**crit**')
+    elif msgs['rolls'][0] == 1 and sides == 20:
+        message = ('rolled a **nat 1**')
     else:
-        message = (f'rolled {rolls[0]}{adv_msg} on a d{sides}{double_msg} with {mod_msg} for a {min_total} of **{result}**.')
+        message = ('rolled {0}').format(msgs['rolls'][0])
 
-    if secret:
-        await bot.send_message(ctx.message.author, f'You {message}')
+    message += ('{0}{1} with {2} for a {3} of **{4}**.').format(
+                msgs['adv/dis'],
+                msgs['double'],
+                msgs['mod'], 
+                msgs['min/total'], 
+                total)
+
+    log.write()
+
+    if arguments['secret']:
+        await bot.send_message(ctx.message.author, 'You {0}'.format(message))
     else:
-        await bot.say(f'{ctx.message.author.mention} {message}')
-   
-def roll_with_adv(sides, dis=False):
-    result = 0
-    rollOne = randint(1,sides)
-    rollTwo = randint(1,sides)
-
-    if not dis:
-        result = rollOne if rollOne > rollTwo else rollTwo
-    if dis:
-        result = rollOne if rollOne < rollTwo else rollTwo
-
-    return result
+        await bot.say('{0.message.author.mention} {1}'.format(ctx, message))
         
-def printable_array(arr):
-    result = ""
+def str_array(arr):
+    if len(arr) == 1:
+        arr.insert(-1, 'a')
+        arr = str(arr).replace(',', '')
+    elif len(arr) == 2:
+        arr.insert(-1, 'and')
+        arr = str(arr).replace(',', '')
+    else:
+        arr.insert(-1, 'and')
+        arr = str(arr)
 
-    for i in range(len(arr)):
-        if i < (len(arr) - 2):
-            result += f'{arr[i]}'
-            result += ', '
-        elif i == (len(arr) - 2):
-            result += f'{arr[i]}'
-        else:
-            result += f' and {arr[i]}'
-
-    return result
-'''
+    return arr.strip('[').strip(']').replace('\'', '').replace('and,', 'and')
 
 try:
     file = open('secret.bot', 'r')

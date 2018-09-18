@@ -4,18 +4,27 @@ from discord.ext import commands
 import pickle
 from item import Item
 from random import randint
-#import asyncio
+from log import Logger
+from inventory import Inventory
 
+log = Logger()
 inventory = []
 prefix = '!'
 bot = commands.Bot(command_prefix=prefix)
 inv_file = 'inv.bot'
 
+@bot.command()
+def checklog():
+    message = log.read()
+    await bot.say(message)
+
 def dm_check(ctx):
-	for role in ctx.message.author.roles:
-		if 'Dungeon Master' == role.name:
-			return True
-	return False
+    try:
+        return True if 'dungeon master' in ctx.message.author.role.name.lower() else False
+    except Exception as e:
+        log.queue_data(e)
+    finally:
+        log.write()
 
 @bot.command(pass_context=True)
 async def dmcheck(ctx):
@@ -24,10 +33,16 @@ async def dmcheck(ctx):
 @bot.command(pass_context=True)
 async def prefix(ctx, pre):
     """changes the prefix of the bot."""
-    if dm_check(ctx):
-        prefix = pre
-    else:
-        await bot.say('Only the DM can change the bot prefix.')
+    try:
+        if dm_check(ctx):
+            prefix = pre
+        else:
+            await bot.say('You can not set the prefix of the bot.')
+    except Exception as e:
+        log.queue_data(e)
+    finally:
+        log.write()
+
 
 @bot.command(pass_context=True)
 async def additem(ctx, title, desc, sell, buy, amt):
@@ -69,6 +84,67 @@ async def lsinv(ctx):
 
 @bot.command(pass_context=True)
 async def roll(ctx, *args):
+    arguments = {'sides': [], 'amount': [], 'adv/dis': 0, 'mod': 0, 'secret': False, 'excpt': []}
+    sides = []
+    for arg in args:
+
+        if 'adv' == arg:
+            arguments['adv/dis'] += 1
+        elif 'dis' == arg:
+            arguments['adv/dis'] -= 1        
+        elif '+' in arg or '-' in arg:
+            arguments['mod'] += int(arg)
+        elif 'secret' == arg:
+            arguments['secret'] = True
+        elif 'd' in arg:
+            for x in range(0,len(arg) - 1):
+                if arg[x] == 'd':
+                    try:
+                        if arg[:x] == '':
+                            arguments['amount'].append(1) # sets amount to 1 
+                            arguments['sides'].append(int(arg[x+1:])) # gets dice size
+                        else:
+                            arguments['amount'].append(int(arg[:x])) # gets numbers before the d
+                            arguments['sides'].append(int(arg[x+1:])) # gets numbers after the d
+                    except Exception as e:
+                        log.queue_data(e)
+                        arguments['excpt'].append(str(e))
+        else:
+            log.queue_data(SyntaxError('unknown command: {0}'.format(arg)))
+            arguments['excpt'].append(str(SyntaxError('unknown command: {0}'.format(arg))))
+
+    if arguments['sides'] == []:
+        arguments['sides'].append(20)
+        arguments['amount'].append(1)
+
+    for rolls in range(0, len(arguments['sides'])):
+        for j in range(0,arguments['amount'][rolls]):
+            if arguments['adv/dis'] > 0: # roll adv
+                temp1 = randint(1,arguments['sides'][rolls]) + arguments['mod']
+                temp2 = randint(1,arguments['sides'][rolls]) + arguments['mod']
+                sides.append(temp1 if temp1 > temp2 else temp2)
+            elif arguments['adv/dis'] < 0: # roll dis
+                temp1 = randint(1,arguments['sides'][rolls]) + arguments['mod']
+                temp2 = randint(1,arguments['sides'][rolls]) + arguments['mod']
+                sides.append(temp1 if temp1 < temp2 else temp2)
+            else: # roll no adv
+                sides.append(randint(1,arguments['sides'][rolls]) + arguments['mod'])
+
+    sides.insert(-1, 'and')
+    sides = str(sides).strip('[').strip(']').replace('\'', '').replace('and,', 'and')
+
+    if arguments['secret']:
+        log.write()
+        message = 'you rolled, {0}'.format(sides)
+        await bot.send_message(ctx.message.author, message)
+    else:
+        log.write()
+        message = '{0.message.author.mention} has rolled {1}'.format(ctx, sides)
+        await bot.say(message)
+        
+'''
+@bot.command(pass_context=True)
+async def roll_legacy(ctx, *args):
     """roll a dice of designated sides."""
     sides = 20
     numDice = 1
@@ -111,10 +187,10 @@ async def roll(ctx, *args):
         if adv == "":
             roll = randint(1,sides)
         elif adv == "adv" or adv == "advantage":
-            roll = rollWithAdv(sides)
+            roll = roll_with_adv(sides)
             adv_msg = " with advantage"
         elif adv == "dis" or adv == "disadvantage":
-            roll = rollWithAdv(sides, dis=True)
+            roll = roll_with_adv(sides, dis=True)
             adv_msg = " with disadvantage"
         else:
             await bot.say('Invalid argument! Try "adv" or "dis"')
@@ -152,12 +228,12 @@ async def roll(ctx, *args):
     elif len(mods) == 1:
         mod_msg = mods[0]
     else:
-        mod_msg = printableArray(mods)
+        mod_msg = printable_array(mods)
 
     message = ''
 
     if numDice > 1:
-        message = (f'rolled {numDice} d{sides}s and got {printableArray(rolls)}{adv_msg}{double_msg} with {mod_msg} for a {min_total} of **{result}**.')
+        message = (f'rolled {numDice} d{sides}s and got {printable_array(rolls)}{adv_msg}{double_msg} with {mod_msg} for a {min_total} of **{result}**.')
     elif rolls[0] == sides and sides == 20:
         message = (f'**crit**{adv_msg} on a d{sides}{double_msg} with {mod_msg} for a {min_total} of **{result}**!')
     elif rolls[0] == 1 and sides == 20:
@@ -170,7 +246,7 @@ async def roll(ctx, *args):
     else:
         await bot.say(f'{ctx.message.author.mention} {message}')
    
-def rollWithAdv(sides, dis=False):
+def roll_with_adv(sides, dis=False):
     result = 0
     rollOne = randint(1,sides)
     rollTwo = randint(1,sides)
@@ -182,7 +258,7 @@ def rollWithAdv(sides, dis=False):
 
     return result
         
-def printableArray(arr):
+def printable_array(arr):
     result = ""
 
     for i in range(len(arr)):
@@ -195,11 +271,13 @@ def printableArray(arr):
             result += f' and {arr[i]}'
 
     return result
+'''
 
 try:
     file = open('secret.bot', 'r')
     token = file.readline()
     file.close()
+    token = token.replace('\n','')
     bot.run(token)
 except Exception as error:
     print('Something went wrong ¯\_(ツ)_/¯')

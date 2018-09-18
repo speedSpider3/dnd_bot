@@ -96,18 +96,13 @@ async def roll(ctx, *args):
         elif 'secret' == arg:
             arguments['secret'] = True
         elif 'd' in arg:
-            for x in range(0,len(arg) - 1):
-                if arg[x] == 'd':
-                    try:
-                        if arg[:x] == '':
-                            arguments['amount'].append(1) # sets amount to 1 
-                            arguments['sides'].append(int(arg[x+1:])) # gets dice size
-                        else:
-                            arguments['amount'].append(int(arg[:x])) # gets numbers before the d
-                            arguments['sides'].append(int(arg[x+1:])) # gets numbers after the d
-                    except Exception as e:
-                        log.queue_data(e)
-                        arguments['excpt'].append(str(e))
+            try:
+                d_ind = arg.index('d')
+                arguments['amount'].append(int(arg[:d_ind]))
+                arguments['sides'].append(int(arg[d_ind+1:]))
+            except Exception as e:
+                log.queue_data(e)
+                arguments['excpt'].append(str(e))
         else:
             log.queue_data(SyntaxError('unknown command: {0}'.format(arg)))
             arguments['excpt'].append(str(SyntaxError('unknown command: {0}'.format(arg))))

@@ -5,7 +5,7 @@ import pickle
 from item import Item
 from random import randint
 from log import Logger
-from inventory import Inventory
+# from inventory import Inventory
 
 log = Logger()
 inventory = []
@@ -13,19 +13,22 @@ prefix = '!'
 bot = commands.Bot(command_prefix=prefix)
 inv_file = 'inv.bot'
 
-@bot.command()
-def checklog():
-    message = log.read()
-    await bot.say(message)
-
 def dm_check(ctx):
     try:
-        return True if 'dungeon master' in ctx.message.author.role.name.lower() else False
+        for role in ctx.message.author.roles:
+            if 'dungeon master' == role.name.lower():
+                return True
+        return False
     except Exception as e:
         log.queue_data(e)
     finally:
         log.write()
 
+@bot.command()
+async def checklog():
+    message = log.read()
+    await bot.say(message)
+	
 @bot.command(pass_context=True)
 async def prefix(ctx, pre):
     """changes the prefix of the bot."""
@@ -66,7 +69,7 @@ async def rmitem(ctx, title, amt):
         pickle.dump(inventory, inv_file)
         await bot.say('Removed {0} {1}(s) from the inventory.'.format(amt, title))
     else:
-        await bot.say('You can not remove an item to the inventory.')
+        await bot.say('You can not remove an item from the inventory.')
             
 
 @bot.command(pass_context=True)
@@ -155,7 +158,7 @@ async def roll_legacy(ctx, *args):
     secret = False
 
     for arg in args:
-        if re.match(r"^(([1-9]*)d[^io])", arg):
+        if re.match(r"^(([0-9]*)d[^io])", arg):
             if arg.startswith('d'):
                 sides = int(arg[1:])
             else:

@@ -83,7 +83,7 @@ async def lsinv(ctx):
 
 @bot.command(pass_context=True)
 async def roll(ctx, *args):
-    arguments = {'sides': [], 'amount': [], 'adv/dis': 0, 'mod': 0, 'secret': False, 'excpt': []}
+    arguments = {'sides': [], 'amount': [], 'adv/dis': 0, 'mod': 0, 'secret': False}
     sides = []
     for arg in args:
 
@@ -102,10 +102,8 @@ async def roll(ctx, *args):
                 arguments['sides'].append(int(arg[d_ind+1:]))
             except Exception as e:
                 log.queue_data(e)
-                arguments['excpt'].append(str(e))
         else:
             log.queue_data(SyntaxError('unknown command: {0}'.format(arg)))
-            arguments['excpt'].append(str(SyntaxError('unknown command: {0}'.format(arg))))
 
     if arguments['sides'] == []:
         arguments['sides'].append(20)

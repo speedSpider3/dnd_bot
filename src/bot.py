@@ -83,8 +83,9 @@ async def lsinv(ctx):
 
 @bot.command(pass_context=True)
 async def roll(ctx, *args):
-    arguments = {'sides': 20, 'amount': 1, 'adv/dis': 0, 'mod': 0, 'secret': False}
+    arguments = {'sides': 20, 'amount': 1, 'adv/dis': 0, 'mods': [], 'secret': False}
     rolls = []
+    total = 0
     for arg in args:
 
         if 'adv' == arg:
@@ -92,7 +93,7 @@ async def roll(ctx, *args):
         elif 'dis' == arg:
             arguments['adv/dis'] -= 1        
         elif '+' in arg or '-' in arg:
-            arguments['mod'] += int(arg)
+            arguments['mods'].append(arg)
         elif 'secret' == arg:
             arguments['secret'] = True
         elif 'd' in arg:
@@ -116,6 +117,12 @@ async def roll(ctx, *args):
             rolls.append(temp1 if temp1 < temp2 else temp2)
         else:
             rolls.append(randint(1,arguments['sides']))
+
+    for roll in rolls:
+        total += roll
+
+    for mod in mods:
+        total += int(mod)
 
     rolls = str_array(rolls)
 

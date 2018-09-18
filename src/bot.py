@@ -83,8 +83,8 @@ async def lsinv(ctx):
 
 @bot.command(pass_context=True)
 async def roll(ctx, *args):
-    arguments = {'sides': [], 'amount': [], 'adv/dis': 0, 'mod': 0, 'secret': False}
-    sides = []
+    arguments = {'sides': 20, 'amount': 1, 'adv/dis': 0, 'mod': 0, 'secret': False}
+    rolls = []
     for arg in args:
 
         if 'adv' == arg:
@@ -98,39 +98,34 @@ async def roll(ctx, *args):
         elif 'd' in arg:
             try:
                 d_ind = arg.index('d')
-                arguments['amount'].append(int(arg[:d_ind]))
-                arguments['sides'].append(int(arg[d_ind+1:]))
+                arguments['amount'] = int(arg[:d_ind])
+                arguments['sides'] = int(arg[d_ind+1:])
             except Exception as e:
                 log.queue_data(e)
         else:
             log.queue_data(SyntaxError('unknown command: {0}'.format(arg)))
 
-    if arguments['sides'] == []:
-        arguments['sides'].append(20)
-        arguments['amount'].append(1)
+    for _ in range(arguments['amount']):
+        if arguments['adv/dis'] > 0:
+            temp1 = randint(1,arguments['sides'])
+            temp2 = randint(1,arguments['sides'])
+            rolls.append(temp1 if temp1 > temp2 else temp2)
+        elif arguments['adv/dis'] < 0:
+            temp1 = randint(1,arguments['sides'])
+            temp2 = randint(1,arguments['sides'])
+            rolls.append(temp1 if temp1 < temp2 else temp2)
+        else:
+            rolls.append(randint(1,arguments['sides']))
 
-    for rolls in range(0, len(arguments['sides'])):
-        for j in range(0,arguments['amount'][rolls]):
-            if arguments['adv/dis'] > 0: # roll adv
-                temp1 = randint(1,arguments['sides'][rolls]) + arguments['mod']
-                temp2 = randint(1,arguments['sides'][rolls]) + arguments['mod']
-                sides.append(temp1 if temp1 > temp2 else temp2)
-            elif arguments['adv/dis'] < 0: # roll dis
-                temp1 = randint(1,arguments['sides'][rolls]) + arguments['mod']
-                temp2 = randint(1,arguments['sides'][rolls]) + arguments['mod']
-                sides.append(temp1 if temp1 < temp2 else temp2)
-            else: # roll no adv
-                sides.append(randint(1,arguments['sides'][rolls]) + arguments['mod'])
-
-    sides = str_array(sides)
+    rolls = str_array(rolls)
 
     if arguments['secret']:
         log.write()
-        message = 'you rolled, {0}'.format(sides)
+        message = 'you rolled, {0}'.format(rolls)
         await bot.send_message(ctx.message.author, message)
     else:
         log.write()
-        message = '{0.message.author.mention} has rolled {1}'.format(ctx, sides)
+        message = '{0.message.author.mention} has rolled {1}'.format(ctx, rolls)
         await bot.say(message)
         
 def str_array(arr):
@@ -139,12 +134,12 @@ def str_array(arr):
         arr = str(arr).replace(',', '')
     elif len(arr) == 2:
         arr.insert(-1, 'and')
-        arr = str(arr).replace(',', '').replace('and,', 'and')
+        arr = str(arr).replace(',', '')
     else:
         arr.insert(-1, 'and')
-        arr = str(arr).replace('and,', 'and')
+        arr = str(arr)
 
-    arr = arr.strip('[').strip(']').replace('\'', '')
+    arr = arr.strip('[').strip(']').replace('\'', '').replace('and,', 'and')
 
     return arr
 

@@ -124,8 +124,7 @@ async def roll(ctx, *args):
             else: # roll no adv
                 sides.append(randint(1,arguments['sides'][rolls]) + arguments['mod'])
 
-    sides.insert(-1, 'and')
-    sides = str(sides).strip('[').strip(']').replace('\'', '').replace('and,', 'and')
+    sides = str_array(sides)
 
     if arguments['secret']:
         log.write()
@@ -136,6 +135,21 @@ async def roll(ctx, *args):
         message = '{0.message.author.mention} has rolled {1}'.format(ctx, sides)
         await bot.say(message)
         
+def str_array(arr):
+    if len(arr) == 1:
+        arr.insert(-1, 'a')
+        arr = str(arr).replace(',', '')
+    elif len(arr) == 2:
+        arr.insert(-1, 'and')
+        arr = str(arr).replace(',', '').replace('and,', 'and')
+    else:
+        arr.insert(-1, 'and')
+        arr = str(arr).replace('and,', 'and')
+
+    arr = arr.strip('[').strip(']').replace('\'', '')
+
+    return arr
+
 '''
 @bot.command(pass_context=True)
 async def roll_legacy(ctx, *args):

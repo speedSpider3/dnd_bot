@@ -5,18 +5,13 @@ import pickle
 from item import Item
 from random import randint
 from log import Logger
-from inventory import Inventory
+# from inventory import Inventory
 
 log = Logger()
 inventory = []
 prefix = '!'
 bot = commands.Bot(command_prefix=prefix)
 inv_file = 'inv.bot'
-
-@bot.command()
-def checklog():
-    message = log.read()
-    await bot.say(message)
 
 def dm_check(ctx):
     try:
@@ -25,6 +20,11 @@ def dm_check(ctx):
         log.queue_data(e)
     finally:
         log.write()
+
+@bot.command()
+async def checklog():
+    message = log.read()
+    await bot.say(message)
 
 @bot.command(pass_context=True)
 async def dmcheck(ctx):

@@ -105,12 +105,10 @@ async def roll(ctx, *args):
             try:
                 if arg.startswith('d'):
                     arguments['sides'] = int(arg[1:])
-                    print(arguments['sides'])
                 else:
                     d_ind = arg.index('d')
                     arguments['amount'] = int(arg[:d_ind])
                     arguments['sides'] = int(arg[d_ind+1:])
-                    print(arguments['sides'])
             except Exception as e:
                 log.queue_data(e)
         else:

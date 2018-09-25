@@ -83,6 +83,7 @@ async def lsinv(ctx):
 
 @bot.command(pass_context=True)
 async def roll(ctx, *args):
+    """rolls a specified number of dice with a specified number of sides"""
     arguments = {'sides': 20, 'amount': 1, 'adv/dis': 0, 'mods': [], 'secret': False, 'double': False}
     msgs = {'rolls': [], 'double': '', 'adv/dis': '', 'min/total': 'total', 'mod': 'no modifiers'}
     for arg in args:
@@ -105,12 +106,10 @@ async def roll(ctx, *args):
             try:
                 if arg.startswith('d'):
                     arguments['sides'] = int(arg[1:])
-                    print(arguments['sides'])
                 else:
                     d_ind = arg.index('d')
                     arguments['amount'] = int(arg[:d_ind])
                     arguments['sides'] = int(arg[d_ind+1:])
-                    print(arguments['sides'])
             except Exception as e:
                 log.queue_data(e)
         else:

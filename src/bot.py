@@ -4,17 +4,13 @@ from discord.ext import commands
 import pickle
 from item import Item
 from random import randint
-from player_class import Player_Class
-from player import Player
+from character import Character
 from log import Logger
 # from inventory import Inventory
 
 log = Logger()
 inventory = []
-party = []
 bot = commands.Bot(command_prefix='!')
-inv_file = 'inv.bot'
-party_file = 'party.bot'
 
 def create_file(to_create):
     try:
@@ -52,39 +48,81 @@ async def prefix(ctx, pre):
         log.write()
 
 @bot.command(pass_context=True)
-async def addpartymember(ctx, player_name, class_name, subclass_name):
+async def addpartymember(ctx, name, class_name, subclass_name=""):
     file = "party_files/" + ctx.message.channel.server.id + ".bot"
     if dm_check(ctx):
-        create_file(file)
-        try:
-            with open(file, 'rb') as pickle_file:
-                party = pickle.load(pickle_file)
-        except EOFError:
-            party = []
-        player = Player(player_name,Player_Class(class_name,subclass_name))
+        party = load_party(ctx)
+        player = Character(name,class_name,subclass_name)
+        for character in party:
+            if character.get_name().lower() == name.lower():
+                await bot.say(name + " is already in the party!")
+                return
         party.append(player)
-        with open(file, 'wb') as pickle_file:
-            pickle.dump(party, pickle_file)
+        dump(file, party)
+        await bot.say(player.get_name() + " succesfully added!")
     else:
         await bot.say('You can not add a member to the party.')
 
 @bot.command(pass_context=True)
-async def listparty(ctx):
-    file = "party_files/" + ctx.message.channel.server.id + ".bot"
-    create_file(file)
-    try:
-        with open(file, 'rb') as pickle_file:
-            party = pickle.load(pickle_file)
-    except EOFError:
-        party = []
+async def rmpartymember(ctx, character_name):
+    if dm_check(ctx):
+        party = load_party(ctx)
+        deleted = False
+        for character in party:
+            if character.get_name().lower() == character_name.lower():
+                deleted = True
+        party = [ character for character in party if character.get_name().lower() != character_name.lower() ]
+        if deleted:
+            dump(file, party)
+            await bot.say("Succesfully removed " + character_name + " from the party!")
+        else:
+            await bot.say(character_name + " not found.")
+    else:
+        await bot.say("You can not remove a member from the party.")
+
+@bot.command(pass_context=True)
+async def clearparty(ctx):
+    if dm_check(ctx):
+        file = "party_files/" + ctx.message.channel.server.id + ".bot"
+        dump(file, [])
+        await bot.say("Cleared the party.")
+    else:
+        await bot.say("You can not clear the party.")
+
+@bot.command(pass_context=True)
+async def lsparty(ctx):
+    party = load_party(ctx)
     print_str = ""
     for player in party:
         print_str += "**" + player.to_string() + "**\n"
-    await bot.say(print_str)
+    if print_str == "":
+        await bot.say("Party is empty!")
+    else:
+        await bot.say(print_str)
+
+@bot.command(pass_context=True)
+async def setsubclass(ctx, character_name, subclass):
+    if dm_check(ctx):
+        file = "party_files/" + ctx.message.channel.server.id + ".bot"
+        party = load_party(ctx)
+        set_subclass = False
+        for character in party:
+            if character.get_name().lower() == character_name.lower():
+                character.set_subclass(subclass)
+                set_subclass = True
+        if set_subclass:
+            dump(file, party)
+            await bot.say("Set subclass succesfully!")
+        else:
+            await bot.say(character_name + " not found.")
+    else:
+        await bot.say("You cannot modify characters.")
+
 
 @bot.command(pass_context=True)
 async def additem(ctx, title, desc, sell, buy, amt):
     """addes item to the inventory"""
+    inv_file = ""
     if dm_check(ctx):
         inventory = pickle.load(inv_file) # loads from file
         inventory.append(Item(title, desc, sell, buy, amt))
@@ -96,6 +134,7 @@ async def additem(ctx, title, desc, sell, buy, amt):
 @bot.command(pass_context=True)
 async def rmitem(ctx, title, amt):
     """removes item(s) from the inventory."""
+    inv_file = ""
     if dm_check(ctx):
         pickle.load(inv_file)
         for x in range(len(inventory)):
@@ -210,6 +249,27 @@ async def roll(ctx, *args):
     else:
         await bot.say('{0.message.author.mention} {1}'.format(ctx, message))
         
+def dump(file_name, obj):
+    create_file(file_name)
+    with open(file_name, 'wb') as pickle_file:
+        pickle.dump(obj, pickle_file)
+
+def load(file_name):
+    create_file(file_name)
+    try:
+        with open(file_name, 'rb') as pickle_file:
+            return pickle.load(pickle_file)
+    except EOFError:
+        return None
+
+def load_party(ctx):
+    file = "party_files/" + ctx.message.channel.server.id + ".bot"
+    party = load(file)
+    if party == None:
+        return []
+    else:
+        return party
+
 def str_array(arr):
     if len(arr) == 1:
         arr.insert(-1, 'a')

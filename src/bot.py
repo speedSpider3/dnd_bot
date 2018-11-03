@@ -4,14 +4,23 @@ from discord.ext import commands
 import pickle
 from item import Item
 from random import randint
+from player_class import Player_Class
+from player import Player
 from log import Logger
 # from inventory import Inventory
 
 log = Logger()
 inventory = []
-prefix = '!'
-bot = commands.Bot(command_prefix=prefix)
+party = []
+bot = commands.Bot(command_prefix='!')
 inv_file = 'inv.bot'
+party_file = 'party.bot'
+
+def create_file(to_create):
+    try:
+        open(to_create, 'r')
+    except IOError:
+        open(to_create, 'w')
 
 def dm_check(ctx):
     try:
@@ -34,7 +43,7 @@ async def prefix(ctx, pre):
     """changes the prefix of the bot."""
     try:
         if dm_check(ctx):
-            prefix = pre
+            bot = commands.Bot(command_prefix=pre)
         else:
             await bot.say('You can not set the prefix of the bot.')
     except Exception as e:
@@ -42,12 +51,42 @@ async def prefix(ctx, pre):
     finally:
         log.write()
 
+@bot.command(pass_context=True)
+async def addpartymember(ctx, player_name, class_name, subclass_name):
+    file = "party_files/" + ctx.message.channel.server.id + ".bot"
+    if dm_check(ctx):
+        create_file(file)
+        try:
+            with open(file, 'rb') as pickle_file:
+                party = pickle.load(pickle_file)
+        except EOFError:
+            party = []
+        player = Player(player_name,Player_Class(class_name,subclass_name))
+        party.append(player)
+        with open(file, 'wb') as pickle_file:
+            pickle.dump(party, pickle_file)
+    else:
+        await bot.say('You can not add a member to the party.')
+
+@bot.command(pass_context=True)
+async def listparty(ctx):
+    file = "party_files/" + ctx.message.channel.server.id + ".bot"
+    create_file(file)
+    try:
+        with open(file, 'rb') as pickle_file:
+            party = pickle.load(pickle_file)
+    except EOFError:
+        party = []
+    print_str = ""
+    for player in party:
+        print_str += "**" + player.to_string() + "**\n"
+    await bot.say(print_str)
 
 @bot.command(pass_context=True)
 async def additem(ctx, title, desc, sell, buy, amt):
     """addes item to the inventory"""
     if dm_check(ctx):
-        pickle.load(inv_file) # loads from file
+        inventory = pickle.load(inv_file) # loads from file
         inventory.append(Item(title, desc, sell, buy, amt))
         pickle.dump(inventory, inv_file) # dumps datat in file
         await bot.say('added {0} to the inventory.'.format(title))
@@ -61,7 +100,7 @@ async def rmitem(ctx, title, amt):
         pickle.load(inv_file)
         for x in range(len(inventory)):
             if title == inventory[x].title:
-                for y in range(amt):
+                for _ in range(amt):
                     inventory[x].amount -= 1
                     if inventory[x].amount < 1:
                         del inventory[x]
@@ -152,7 +191,7 @@ async def roll(ctx, *args):
                     str_array(msgs['rolls']))
     elif msgs['rolls'][0] == 20:
         message = ('**crit**')
-    elif msgs['rolls'][0] == 1 and sides == 20:
+    elif msgs['rolls'][0] == 1 and arguments['sides'] == 20:
         message = ('rolled a **nat 1**')
     else:
         message = ('rolled {0}').format(msgs['rolls'][0])
@@ -191,7 +230,7 @@ try:
     token = token.replace('\n','')
     bot.run(token)
 except Exception as error:
-    print('Something went wrong ¯\_(ツ)_/¯')
+    print('Something went wrong ¯\\_(ツ)_/¯')
     print(error)
     print(error.args)
 finally:

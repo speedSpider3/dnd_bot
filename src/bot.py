@@ -1,5 +1,6 @@
 import re
 import discord
+import os
 from discord.ext import commands
 import pickle
 from item import Item
@@ -9,25 +10,8 @@ from log import Logger
 # from inventory import Inventory
 
 log = Logger()
-inventory = []
 bot = commands.Bot(command_prefix='!')
-
-def create_file(to_create):
-    try:
-        open(to_create, 'r')
-    except IOError:
-        open(to_create, 'w')
-
-def dm_check(ctx):
-    try:
-        for role in ctx.message.author.roles:
-            if 'dungeon master' == role.name.lower():
-                return True
-        return False
-    except Exception as e:
-        log.queue_data(e)
-    finally:
-        log.write()
+dm_role = 'dungeon master'
 
 @bot.command()
 async def checklog():
@@ -120,39 +104,56 @@ async def setsubclass(ctx, character_name, subclass):
 
 
 @bot.command(pass_context=True)
-async def additem(ctx, title, desc, sell, buy, amt):
+async def additem(ctx, title, desc, sell, buy, amt, inv_name=""):
     """addes item to the inventory"""
-    inv_file = ""
-    if dm_check(ctx):
-        inventory = pickle.load(inv_file) # loads from file
-        inventory.append(Item(title, desc, sell, buy, amt))
-        pickle.dump(inventory, inv_file) # dumps datat in file
-        await bot.say('added {0} to the inventory.'.format(title))
-    else:
-        await bot.say('You can not add an item to the inventory.')
+    file = get_inv_file(ctx, inv_name)
+    if file == "not-allowed":
+        await bot.say("You may only modify your own inventory.")
+        return
+
+    inventory = load_inv(file)
+    inventory.append(Item(title, desc, sell, buy, amt))
+    dump(file, inventory)
+    await bot.say("Added {0} to the inventory.".format(title))
+    # inv_file = ""
+    # if dm_check(ctx):
+    #     inventory = pickle.load(inv_file) # loads from file
+    #     inventory.append(Item(title, desc, sell, buy, amt))
+    #     pickle.dump(inventory, inv_file) # dumps datat in file
+    #     await bot.say('added {0} to the inventory.'.format(title))
+    # else:
+    #     await bot.say('You can not add an item to the inventory.')
 
 @bot.command(pass_context=True)
-async def rmitem(ctx, title, amt):
+async def rmitem(ctx, title, amt, inv_name=""):
     """removes item(s) from the inventory."""
-    inv_file = ""
-    if dm_check(ctx):
-        pickle.load(inv_file)
-        for x in range(len(inventory)):
-            if title == inventory[x].title:
-                for _ in range(amt):
-                    inventory[x].amount -= 1
-                    if inventory[x].amount < 1:
-                        del inventory[x]
-                        break
-        pickle.dump(inventory, inv_file)
-        await bot.say('Removed {0} {1}(s) from the inventory.'.format(amt, title))
-    else:
-        await bot.say('You can not remove an item from the inventory.')
+    file = get_inv_file(ctx, inv_name)
+    if file == "not-allowed":
+        await bot.say("You may only modify your own inventory.")
+        return
+
+    inventory = load_inv(file)
+
+    # if dm_check(ctx):
+    #     pickle.load(inv_file)
+    #     for x in range(len(inventory)):
+    #         if title == inventory[x].title:
+    #             for _ in range(amt):
+    #                 inventory[x].amount -= 1
+    #                 if inventory[x].amount < 1:
+    #                     del inventory[x]
+    #                     break
+    #     pickle.dump(inventory, inv_file)
+    #     await bot.say('Removed {0} {1}(s) from the inventory.'.format(amt, title))
+    # else:
+    #     await bot.say('You can not remove an item from the inventory.')
             
 
 @bot.command(pass_context=True)
-async def lsinv(ctx):
+async def lsinv(ctx, inv_name=""):
     """lists the inventory."""
+    file = get_inv_file(ctx, inv_name, True)
+    inventory = load_inv(file)
     string = ''
     for item in inventory:
         string += '''title: {0.title} desc: {0.description}
@@ -270,6 +271,27 @@ def load_party(ctx):
     else:
         return party
 
+def load_inv(inv_file):
+    inv = load(inv_file)
+    if inv == None:
+        return []
+    else:
+        return inv
+
+def get_inv_file(ctx, inv_name, allow_party=False):
+    if not inv_name == "":
+        if not dm_check(ctx):
+            return "not-allowed"
+        else:
+            if inv_name.lower() == "party":
+                inv_name = "party"
+            else:
+                inv_name = inv_name[2:-1]
+    elif inv_name == "":
+        inv_name = ctx.message.author.id
+
+    return "inv_files/" + ctx.message.channel.server.id + "/" + inv_name + ".inv"
+
 def str_array(arr):
     if len(arr) == 1:
         arr.insert(-1, 'a')
@@ -282,6 +304,25 @@ def str_array(arr):
         arr = str(arr)
 
     return arr.strip('[').strip(']').replace('\'', '').replace('and,', 'and')
+
+def create_file(to_create):
+    if not os.path.exists(to_create[:to_create.rfind('/') + 1]):
+        os.makedirs(to_create[:to_create.rfind('/') + 1])
+    try:
+        open(to_create, 'r')
+    except IOError:
+        open(to_create, 'w')
+
+def dm_check(ctx):
+    try:
+        for role in ctx.message.author.roles:
+            if dm_role.lower() == role.name.lower():
+                return True
+        return False
+    except Exception as e:
+        log.queue_data(e)
+    finally:
+        log.write()
 
 try:
     file = open('secret.bot', 'r')

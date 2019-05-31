@@ -163,7 +163,7 @@ async def lsinv(ctx, inv_name=""):
 @bot.command(pass_context=True)
 async def roll(ctx, *args):
     """rolls a specified number of dice with a specified number of sides"""
-    arguments = {'sides': 20, 'amount': 1, 'adv/dis': 0, 'mods': [], 'secret': False, 'double': False}
+    arguments = {'sides': 20, 'amount': 1, 'adv/dis': 0, 'mods': [], 'secret': False, 'double': False} # Add elven accuracy
     msgs = {'rolls': [], 'double': '', 'adv/dis': '', 'min/total': 'total', 'mod': 'no modifiers'}
     for arg in args:
 
